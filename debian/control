@@ -1,19 +1,18 @@
-Source: python-otr
+Source: python3-otr
 Section: python
 Priority: optional
-Maintainer: Dan Pascu <dan@ag-projects.com>
-Build-Depends: debhelper (>= 11), dh-python, python
+Maintainer: Adrian Georgescu <ag@ag-projects.com>
+Build-Depends: debhelper (>= 11), dh-python, python3
 Standards-Version: 4.5.0
-Homepage: https://pypi.python.org/pypi/python-otr
+Homepage: https://ag-projects.com
 
-Package: python-otr
+Package: python3-otr
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends},
-         python-application (>= 2.8.0),
-         python-cryptography (>= 1.6),
-         python-enum34,
-         python-gmpy2,
-         python-zope.interface
+Depends: ${python3:Depends}, ${misc:Depends},
+         python3-application (>= 3.0.0),
+         python3-cryptography (>= 1.6),
+         python3-gmpy2,
+         python3-zope.interface
 Description: Off-The-Record Messaging (OTR) protocol implementation for python
  This package implements the Off-The-Record Messaging protocol in pure python.
  .

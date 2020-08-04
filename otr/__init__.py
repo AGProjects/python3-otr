@@ -2,20 +2,16 @@
 from abc import ABCMeta, abstractmethod
 from application.notification import NotificationCenter, NotificationData, IObserver
 from application.python import Null
-from zope.interface import implements
+from zope.interface import implementer
 
 from otr.cryptography import PrivateKey
 from otr.exceptions import IgnoreMessage, UnencryptedMessage, OTRError
 from otr.protocol import OTRProtocol, OTRState, SMPStatus, QueryMessage, TaggedPlaintextMessage, ErrorMessage, MessageFragmentHandler
-from otr.__info__ import __project__, __summary__, __webpage__, __version__, __author__, __email__, __license__, __copyright__
-
 
 __all__ = ('OTRSession', 'OTRTransport', 'GenericOTRTransport', 'OTRState', 'SMPStatus')
 
 
-class OTRTransport(object):
-    __metaclass__ = ABCMeta
-
+class OTRTransport(object, metaclass=ABCMeta):
     @abstractmethod
     def inject_otr_message(self, message):
         raise NotImplementedError
@@ -29,9 +25,8 @@ class GenericOTRTransport(OTRTransport):
         return self._send_message(message)
 
 
+@implementer(IObserver)
 class OTRSession(object):
-    implements(IObserver)
-
     def __init__(self, private_key, transport, supported_versions=OTRProtocol.supported_versions):
         if not isinstance(private_key, PrivateKey):
             raise TypeError("private_key must be a PrivateKey instance")
@@ -118,20 +113,19 @@ class OTRSession(object):
 
     def handle_input(self, content, content_type):
         # handle fragments
-        if content.startswith(('?OTR|', '?OTR,')):
+        if content.startswith((b'?OTR|', b'?OTR,')):
             content = self.fragment_handler.process(content, protocol=self.protocol)
         else:
             self.fragment_handler.reset()
-
         # handle OTR messages
-        if content.startswith('?OTR:'):
+        if content.startswith(b'?OTR:'):
             if self.protocol is None and self.sent_query and content[OTRProtocol.marker_slice] in OTRProtocol.commit_markers:
                 protocol_class = OTRProtocol.with_marker(content[OTRProtocol.marker_slice])
                 if protocol_class.__version__ in self.supported_versions:
                     self.protocol = protocol_class(self)
             if self.protocol is not None:
                 return self.protocol.handle_input(content, content_type)
-        elif content.startswith('?OTR'):
+        elif content.startswith(b'?OTR'):
             try:
                 query = QueryMessage.decode(content)
             except ValueError:
@@ -190,4 +184,3 @@ class OTRSession(object):
 
     def _NH_OTRProtocolSMPVerificationDidEnd(self, notification):
         notification.center.post_notification('OTRSessionSMPVerificationDidEnd', sender=self, data=notification.data)
-

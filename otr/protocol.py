@@ -1,4 +1,3 @@
-
 import re
 
 from abc import ABCMeta, abstractmethod, abstractproperty
@@ -30,9 +29,7 @@ __all__ = ('QueryMessage', 'TaggedPlaintextMessage', 'ErrorMessage', 'MessageFra
 # OTR messages
 #
 
-class GlobalMessage(object):
-    __metaclass__ = ABCMeta
-
+class GlobalMessage(object, metaclass=ABCMeta):
     @abstractmethod
     def encode(self):
         raise NotImplementedError
@@ -50,44 +47,43 @@ class QueryMessage(GlobalMessage):
         return '{0.__class__.__name__}(versions={0.versions!r})'.format(self)
 
     def encode(self):
-        message = u'I would like to start an Off-the-Record private conversation, but you do not seem to support that.'
+        message = b'I would like to start an Off-the-Record private conversation, but you do not seem to support that.'
         if self.versions == {1}:
-            return '?OTR?  {message}'.format(message=message.encode('utf-8'))
+            return b'?OTR?  {message}'.format(message=message)
         elif 1 in self.versions:
-            return '?OTR?v{versions}?  {message}'.format(versions=''.join(str(x) for x in self.versions if x != 1), message=message.encode('utf-8'))
+            return b'?OTRv%b?  %b' % (b'?OTRv%b?  %b' % (str.encode(''.join(str(x) for x in self.versions if x != 1))), message)
         else:
-            return '?OTRv{versions}?  {message}'.format(versions=''.join(str(x) for x in self.versions), message=message.encode('utf-8'))
+            return b'?OTRv%b?  %b' % (str.encode(''.join(str(x) for x in self.versions)), message)
 
     @classmethod
     def decode(cls, message):
-        if not message.startswith('?OTR'):
+        if not message.startswith(b'?OTR'):
             raise ValueError("Not an OTR query message")
 
         versions = set()
 
-        if message.startswith('?OTR?v'):
-            versions_string, sep, _ = message[6:].partition('?')
-            if sep != '?':
+        if message.startswith(b'?OTR?v'):
+            versions_string, sep, _ = message[6:].partition(b'?')
+            if sep != b'?':
                 raise ValueError("Invalid OTR query message")
             versions.add(1)
-            versions.update(int(x) if x.isdigit() else x for x in versions_string)
-        elif message.startswith('?OTRv'):
-            versions_string, sep, _ = message[5:].partition('?')
-            if sep != '?':
+            versions.update(int(x) if str(x).isdigit() else x for x in versions_string)
+        elif message.startswith(b'?OTRv'):
+            versions_string = str(message)[7:].split('?')[0]
+            if '?' not in str(message):
                 raise ValueError("Invalid OTR query message")
-            versions.update(int(x) if x.isdigit() else x for x in versions_string)
-        elif message.startswith('?OTR?'):
+            versions.update(int(x) if str(x).isdigit() else x for x in versions_string)
+        elif message.startswith(b'?OTR?'):
             versions.add(1)
         else:
             raise ValueError("Invalid OTR query message")
-
         return cls(versions)
 
 
 class TaggedPlaintextMessage(GlobalMessage):
     class __tag__:
-        prefix = '\x20\x09\x20\x20\x09\x09\x09\x09\x20\x09\x20\x09\x20\x09\x20\x20'
-        versions = {1: '\x20\x09\x20\x09\x20\x20\x09\x20', 2: '\x20\x20\x09\x09\x20\x20\x09\x20', 3: '\x20\x20\x09\x09\x20\x20\x09\x09'}
+        prefix = b'\x20\x09\x20\x20\x09\x09\x09\x09\x20\x09\x20\x09\x20\x09\x20\x20'
+        versions = {1: b'\x20\x09\x20\x09\x20\x20\x09\x20', 2: b'\x20\x20\x09\x09\x20\x20\x09\x20', 3: b'\x20\x20\x09\x09\x20\x20\x09\x09'}
 
     def __init__(self, message, versions=None):
         self.message = message
@@ -111,12 +107,12 @@ class TaggedPlaintextMessage(GlobalMessage):
 
         version_tags = []
         for position in range(tag_start + 16, len(message), 8):
-            token = message[position:position+8]
-            if len(token) != 8 or set(token) != {'\x20', '\x09'}:
+            token = message[position:position + 8]
+            if len(token) != 8 or set(token) != {b'\x20', b'\x09'}:
                 break
             version_tags.append(token)
-        versions = {version for version, tag in cls.__tag__.versions.items() if tag in version_tags}
-        tag_end = tag_start + 16 + 8*len(version_tags)
+        versions = {version for version, tag in list(cls.__tag__.versions.items()) if tag in version_tags}
+        tag_end = tag_start + 16 + 8 * len(version_tags)
 
         original_message = message[:tag_start] + message[tag_end:]
 
@@ -131,11 +127,11 @@ class ErrorMessage(GlobalMessage):
         return '{0.__class__.__name__}(error={0.error!r})'.format(self)
 
     def encode(self):
-        return '?OTR Error:{0.error}'.format(self)
+        return b'?OTR Error:{0.error}'.format(self)
 
     @classmethod
     def decode(cls, message):
-        if not message.startswith('?OTR Error:'):
+        if not message.startswith(b'?OTR Error:'):
             raise ValueError("Not an OTR error message")
         return cls(message[11:])
 
@@ -166,18 +162,16 @@ class EncodedMessageType(ABCMeta):
         return mcls.__classes__[type]
 
 
-class EncodedMessage(object):
-    __metaclass__ = EncodedMessageType
-
+class EncodedMessage(object, metaclass=EncodedMessageType):
     __type__ = None
     __header__ = None
 
     def encode(self):
-        return '?OTR:' + base64_encode(self.__header__ + self.pack_data())[:-1] + '.'
+        return b'?OTR:' + base64_encode(self.__header__ + self.pack_data())[:-1] + b'.'
 
     @classmethod
     def decode(cls, message, protocol):
-        if not message.startswith('?OTR:') or not message.endswith('.'):
+        if not message.startswith(b'?OTR:') or not message.endswith(b'.'):
             raise ValueError("Not an OTR message")
         try:
             message = base64_decode(message[5:-1])
@@ -262,7 +256,7 @@ class RevealSignatureMessage(EncodedMessage):
 
     @staticmethod
     def unpack_data(message):
-        return read_content(message, Data, Data, '20s')
+        return read_content(message, Data, Data, b'20s')
 
     @classmethod
     def new(cls, protocol):
@@ -292,7 +286,7 @@ class SignatureMessage(EncodedMessage):
 
     @staticmethod
     def unpack_data(message):
-        return read_content(message, Data, '20s')
+        return read_content(message, Data, b'20s')
 
     @classmethod
     def new(cls, protocol):
@@ -329,21 +323,21 @@ class DataMessage(EncodedMessage):
 
     @staticmethod
     def unpack_data(message):
-        return read_content(message, '!BII', MPI, '!Q', Data, '20s', Data)
+        return read_content(message, b'!BII', MPI, b'!Q', Data, b'20s', Data)
 
     @classmethod
-    def new(cls, protocol, content='', tlv_records=()):
+    def new(cls, protocol, content=b'', tlv_records=()):
         if tlv_records:
-            if '\0' in content:
+            if b'\0' in content:
                 raise ValueError("cannot attach TLVs to a message that has Null bytes in it")
-            content += '\0' + TLVRecords.encode(tlv_records)
+            content += b'\0' + TLVRecords.encode(tlv_records)
         current_dh_key, next_dh_key = protocol.dh_local_private_keys
         sender_keyid, recipient_keyid = DHKeyPair(current_dh_key, protocol.dh_remote_public_keys.latest).id
         session_key = protocol.session_keys[sender_keyid, recipient_keyid]
         session_key.outgoing_counter += 1
         header = protocol.encode_header(cls)
         encrypted_message = AESCounterCipher(session_key.outgoing_key, session_key.outgoing_counter).encrypt(content)
-        old_macs = ''.join(protocol.session_keys.old_macs)
+        old_macs = ''.join(str(old_mac) for old_mac in protocol.session_keys.old_macs)
         protocol.session_keys.old_macs = []
         return cls(0, sender_keyid, recipient_keyid, next_dh_key.public_key, session_key.outgoing_counter, encrypted_message, CalculateMAC(key=session_key.outgoing_mac), old_macs, header)
 
@@ -392,7 +386,7 @@ class MessageFragmentHandler(object):
             self.message = message
             self.k = k
             self.n = n
-        elif k == self.k+1 and n == self.n:
+        elif k == self.k + 1 and n == self.n:
             self.message += message
             self.k = k
         else:
@@ -426,15 +420,15 @@ class TLVRecordType(ABCMeta):
         return mcls.__classes__[type]
 
 
-class TLVRecord(object):
-    __metaclass__ = TLVRecordType
-
+class TLVRecord(object, metaclass=TLVRecordType):
     __type__ = None
 
     __header__ = Struct('!HH')
 
     def encode(self):
         data = self.pack_data()
+        if not data:
+            data = b''
         return self.__header__.pack(self.__type__, len(data)) + data
 
     @classmethod
@@ -464,14 +458,14 @@ class SMPMessageTLV(TLVRecord):
         raise NotImplementedError
 
     def pack_data(self):
-        return pack('!I', self.__size__) + ''.join(pack_mpi(mpi) for mpi in self.mpi_list)
+        return pack('!I', self.__size__) + b''.join(pack_mpi(mpi) for mpi in self.mpi_list)
 
     @classmethod
     def unpack_data(cls, data):
         size, mpi_data = read_format('!I', data)
         if size != cls.__size__:
             raise ValueError("Expected {} MPIs, got {}".format(cls.__size__, size))
-        return read_content(mpi_data, *(size*[MPI]))
+        return read_content(mpi_data, * (size * [MPI]))
 
     @abstractmethod
     def new(cls, protocol):
@@ -657,7 +651,7 @@ class ExtraKeyTLV(TLVRecord):
     __type__ = 8
 
     def __init__(self, scope, data=None):
-        if not isinstance(scope, basestring) or not isinstance(data, (basestring, type(None))):
+        if not isinstance(scope, str) or not isinstance(data, (str, type(None))):
             raise TypeError("scope must be a string and data must be a string or None")
         if len(scope) != 4:
             raise ValueError("scope must be a 4 character string")
@@ -676,7 +670,7 @@ class ExtraKeyTLV(TLVRecord):
 class TLVRecords(object):
     @staticmethod
     def encode(tlv_list):
-        return ''.join(tlv.encode() for tlv in tlv_list)
+        return b''.join(tlv.encode() for tlv in tlv_list)
 
     @staticmethod
     def decode(buffer):
@@ -734,7 +728,7 @@ class DHKeyQueue(object):
         self.__dirty__ = True
 
 
-class SessionKeyMAC(str):
+class SessionKeyMAC(bytes):
     def __new__(cls, key):
         instance = super(SessionKeyMAC, cls).__new__(cls, sha1(key).digest())
         instance.used = False
@@ -754,8 +748,8 @@ class SessionKey(object):
     def new(cls, private_key, public_key):
         secret = powmod(public_key, private_key, private_key.prime)
         secret_string = pack_mpi(secret)
-        key1 = sha1('\x01' + secret_string).digest()[:16]
-        key2 = sha1('\x02' + secret_string).digest()[:16]
+        key1 = sha1(b'\x01' + secret_string).digest()[:16]
+        key2 = sha1(b'\x02' + secret_string).digest()[:16]
         if private_key.public_key > public_key:
             outgoing_key, incoming_key = key1, key2
         else:
@@ -845,35 +839,35 @@ class AuthenticatedKeyExchange(object):
 
     @property
     def session_id(self):
-        return sha256('\x00' + pack_mpi(self.secret)).digest()[:8] if self.secret is not None else None
+        return sha256(b'\x00' + pack_mpi(self.secret)).digest()[:8] if self.secret is not None else None
 
     @property
     def aes_c(self):
-        return sha256('\x01' + pack_mpi(self.secret)).digest()[:16] if self.secret is not None else None
+        return sha256(b'\x01' + pack_mpi(self.secret)).digest()[:16] if self.secret is not None else None
 
     @property
     def aes_cp(self):
-        return sha256('\x01' + pack_mpi(self.secret)).digest()[16:] if self.secret is not None else None
+        return sha256(b'\x01' + pack_mpi(self.secret)).digest()[16:] if self.secret is not None else None
 
     @property
     def mac_m1(self):
-        return sha256('\x02' + pack_mpi(self.secret)).digest() if self.secret is not None else None
+        return sha256(b'\x02' + pack_mpi(self.secret)).digest() if self.secret is not None else None
 
     @property
     def mac_m2(self):
-        return sha256('\x03' + pack_mpi(self.secret)).digest() if self.secret is not None else None
+        return sha256(b'\x03' + pack_mpi(self.secret)).digest() if self.secret is not None else None
 
     @property
     def mac_m1p(self):
-        return sha256('\x04' + pack_mpi(self.secret)).digest() if self.secret is not None else None
+        return sha256(b'\x04' + pack_mpi(self.secret)).digest() if self.secret is not None else None
 
     @property
     def mac_m2p(self):
-        return sha256('\x05' + pack_mpi(self.secret)).digest() if self.secret is not None else None
+        return sha256(b'\x05' + pack_mpi(self.secret)).digest() if self.secret is not None else None
 
     @property
     def extra_key(self):
-        return sha256('\xff' + pack_mpi(self.secret)).digest() if self.secret is not None else None
+        return sha256(b'\xff' + pack_mpi(self.secret)).digest() if self.secret is not None else None
 
     @property
     def gy(self):
@@ -882,7 +876,7 @@ class AuthenticatedKeyExchange(object):
     @gy.setter
     def gy(self, value):
         self.__dict__['gy'] = value
-        self.__dict__['secret'] = long(powmod(value, self.dh_key, self.dh_key.prime)) if value is not None else None
+        self.__dict__['secret'] = int(powmod(value, self.dh_key, self.dh_key.prime)) if value is not None else None
 
 
 class SocialistMillionairesProtocol(object):
@@ -928,9 +922,9 @@ class SocialistMillionairesProtocol(object):
     @staticmethod
     def hash(version, mpi1, mpi2=None):
         if mpi2 is None:
-            return bytes_to_long(sha256(chr(version) + pack_mpi(mpi1)).digest())
+            return bytes_to_long(sha256(chr(version).encode() + pack_mpi(mpi1)).digest())
         else:
-            return bytes_to_long(sha256(chr(version) + pack_mpi(mpi1) + pack_mpi(mpi2)).digest())
+            return bytes_to_long(sha256(chr(version).encode() + pack_mpi(mpi1) + pack_mpi(mpi2)).digest())
 
     #
     # The zero-knowledge proofs are described in section 2.3 of the paper "A fair and efficient solution to the socialist millionaires' problem",
@@ -992,7 +986,7 @@ def smp_message_handler(expected_state):
                 elif self.smp.state is not expected_state:
                     raise ValueError('received {0.__class__.__name__} out of order'.format(tlv))
                 function(self, tlv)
-            except ValueError, e:
+            except ValueError as e:
                 self._smp_terminate(status=SMPStatus.ProtocolError, reason=str(e), send_abort=True)
         return function_wrapper
     return smp_message_handler_wrapper
@@ -1023,17 +1017,15 @@ class OTRProtocolType(ABCMeta):
         return slice(5, 9)
 
     @classmethod
-    def with_version(mcls, version):
-        return mcls.__classes__[version]
+    def with_version(mcs, version):
+        return mcs.__classes__[version]
 
     @classmethod
-    def with_marker(mcls, marker):
-        return mcls.__markers__[marker]
+    def with_marker(mcs, marker):
+        return mcs.__markers__[marker]
 
 
-class OTRProtocol(object):
-    __metaclass__ = OTRProtocolType
-
+class OTRProtocol(object, metaclass=OTRProtocolType):
     __version__ = None
 
     __header__ = None
@@ -1097,14 +1089,14 @@ class OTRProtocol(object):
             notification_center.post_notification('OTRProtocolSMPVerificationDidNotStart', sender=self, data=NotificationData(reason='in progress'))
         else:
             self.smp.question = question
-            self.smp.secret = bytes_to_long(sha256('\1' + self.local_private_key.public_key.fingerprint + self.remote_public_key.fingerprint + self.session_id + secret).digest())
+            self.smp.secret = bytes_to_long(sha256(b'\1' + self.local_private_key.public_key.fingerprint + self.remote_public_key.fingerprint + self.session_id + secret.encode()).digest())
             self.send_tlv(SMPMessage1.new(self) if question is None else SMPMessage1Q.new(self, question))
             self.smp.state = SMPState.ExpectMessage2
             notification_center.post_notification('OTRProtocolSMPVerificationDidStart', sender=self, data=NotificationData(originator='local', question=question))
 
     def smp_answer(self, secret):
         if self.smp.state is SMPState.AwaitingUserSecret:
-            self.smp.secret = bytes_to_long(sha256('\1' + self.remote_public_key.fingerprint + self.local_private_key.public_key.fingerprint + self.session_id + secret).digest())
+            self.smp.secret = bytes_to_long(sha256(b'\1' + self.remote_public_key.fingerprint + self.local_private_key.public_key.fingerprint + self.session_id + secret.encode()).digest())
             self.smp.pa = self.smp.g3 ** self.smp.r                             # pa = g3^r
             self.smp.qa = self.smp.r.public_key * self.smp.g2**self.smp.secret  # qa = g1^r * g2^secret
             self.send_tlv(SMPMessage2.new(self))
@@ -1264,7 +1256,7 @@ class OTRProtocol(object):
             error = "Invalid session key requested"
             self.send_message(ErrorMessage(error))
             raise EncryptedMessageError(error)
-        except ValueError, e:
+        except ValueError as e:
             error = str(e)
             self.send_message(ErrorMessage(error))
             raise EncryptedMessageError(error)
@@ -1277,8 +1269,8 @@ class OTRProtocol(object):
                 self.dh_remote_public_keys.add(DHPublicKey(message.next_public_key))
             content = AESCounterCipher(session_key.incoming_key, session_key.incoming_counter).decrypt(message.encrypted_message)
             if message.content_type.startswith('text/'):
-                content, sep, tlv_data = content.partition('\0')
-                if sep == '\0':
+                content, sep, tlv_data = content.partition(b'\0')
+                if sep == b'\0':
                     try:
                         tlv_records = TLVRecords.decode(tlv_data)
                     except ValueError:
@@ -1396,4 +1388,3 @@ class OTRProtocolVersion3(OTRProtocol):
         if recipient_tag != 0 and (self.local_tag, self.remote_tag) != (recipient_tag, sender_tag):
             raise IgnoreMessage
         return EncodedMessage.get(message_type), message_buffer
-

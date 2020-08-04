@@ -7,8 +7,12 @@ from struct import Struct, pack
 __all__ = ('Data', 'MPI', 'bytes_to_long', 'long_to_bytes', 'pack_data', 'pack_mpi', 'read_format', 'read_data', 'read_mpi', 'read_content')
 
 
-class Data: __metaclass__ = MarkerType
-class MPI:  __metaclass__ = MarkerType
+class Data(metaclass=MarkerType):
+    pass
+
+
+class MPI(metaclass=MarkerType):
+    pass
 
 
 def bytes_to_long(string):
@@ -16,14 +20,18 @@ def bytes_to_long(string):
 
 
 def long_to_bytes(number, length=1):
-    hex_str = '{:0{}x}'.format(number, length*2)
+    hex_str = '{:0{}x}'.format(number, length * 2)
     if len(hex_str) % 2:
         hex_str = '0' + hex_str
     return hex_decode(hex_str)
 
 
 def pack_data(data):
-    return pack('!I', len(data)) + data
+    if not data:
+        data = b''
+    if type(data) is not bytes:
+        data = data[2:-1].encode()
+    return pack(b'!I', len(data)) + data
 
 
 def pack_mpi(mpi):
@@ -34,7 +42,7 @@ def read_format(format, buffer, offset=0):
     data_structure = Struct(format)
     if len(buffer) < offset + data_structure.size:
         raise ValueError("Not enough data bytes in message")
-    return data_structure.unpack_from(buffer, offset) + (buffer[offset+data_structure.size:],)
+    return data_structure.unpack_from(buffer, offset) + (buffer[offset + data_structure.size:],)
 
 
 def read_data(buffer, offset=0):
@@ -65,4 +73,3 @@ def read_content(buffer, *elements):
         else:
             raise TypeError("invalid element type: %r" % element)
     return result[0] if len(result) == 1 else tuple(result) or None
-

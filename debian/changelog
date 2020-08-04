@@ -1,3 +1,9 @@
+python3-otr (2.0.0) unstable; urgency=medium
+
+  * Migrate to Python 3
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Mon, 08 Jun 2020 20:58:53 +0200
+
 python-otr (1.2.2) unstable; urgency=medium
 
   * Explicitly use python2 in shebang lines

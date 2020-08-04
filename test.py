@@ -1,23 +1,21 @@
-#!/usr/bin/python2
-
+#!/usr/bin/python3
 import time
 import unittest
+from threading import Event
 
+from zope.interface import implementer
 from application import log
 from application.notification import IObserver, NotificationCenter
 from application.python import Null
 from application.python.queue import EventQueue
-from threading import Event
-from zope.interface import implements
 
 from otr import OTRTransport, OTRSession, OTRState, SMPStatus
 from otr.cryptography import DSAPrivateKey
 from otr.exceptions import IgnoreMessage
 
 
+@implementer(IObserver)
 class DataConnection(object):
-    implements(IObserver)
-
     def __init__(self, name):
         self.name = name
         self.secret = None
@@ -106,11 +104,12 @@ class DataConnection(object):
         self.smp_status = notification.data.status
         self.smp_done.set()
 
+
 OTRTransport.register(DataConnection)
 
 
+@implementer(IObserver)
 class NotificationObserver(object):
-    implements(IObserver)
 
     def start(self):
         notification_center = NotificationCenter()
@@ -196,8 +195,8 @@ class OTRTest(unittest.TestCase):
         self.remote_endpoint.start_otr()
         self.local_endpoint.ake_done.wait(1)
         self.remote_endpoint.ake_done.wait(1)
-        self.local_endpoint.send('hello')
-        self.remote_endpoint.send('test')
+        self.local_endpoint.send(b'hello')
+        self.remote_endpoint.send(b'test')
         self.local_endpoint.all_done.wait(1)
         self.remote_endpoint.all_done.wait(1)
         self.assertEqual(self.local_endpoint.sent_message, self.remote_endpoint.received_message, "The message sent by local was not received correctly on remote")
@@ -230,6 +229,5 @@ class OTRTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    log.Formatter.prefix_format = '{record.levelname:<8s} '
     log.level.current = log.level.INFO
     unittest.main(verbosity=2)

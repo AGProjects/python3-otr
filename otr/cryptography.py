@@ -1,6 +1,3 @@
-
-from __future__ import absolute_import
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 from application.python.types import MarkerType
 from application.system import openfile
@@ -52,17 +49,17 @@ class LocalContext(local):
         self.context = DHGroupNumberContext()
 
 
-class DHGroupNumber(long, DHGroup):
+class DHGroupNumber(int, DHGroup):
     __local__ = LocalContext()
 
     def __new__(cls, *args, **kw):
-        return long.__new__(cls, long(*args, **kw) % cls.__local__.context.modulo)
+        return int.__new__(cls, int(*args, **kw) % cls.__local__.context.modulo)
 
     def __add__(self, other):
-        return DHGroupNumber(long(self).__add__(other))
+        return DHGroupNumber(int(self).__add__(other))
 
     def __sub__(self, other):
-        return DHGroupNumber(long(self).__sub__(other))
+        return DHGroupNumber(int(self).__sub__(other))
 
     def __mul__(self, other):
         return DHGroupNumber(mul(self, other))
@@ -76,10 +73,10 @@ class DHGroupNumber(long, DHGroup):
     __div__ = __truediv__ = __floordiv__
 
     def __radd__(self, other):
-        return DHGroupNumber(long(self).__radd__(other))
+        return DHGroupNumber(int(self).__radd__(other))
 
     def __rsub__(self, other):
-        return DHGroupNumber(long(self).__rsub__(other))
+        return DHGroupNumber(int(self).__rsub__(other))
 
     def __rmul__(self, other):
         return DHGroupNumber(mul(other, self))
@@ -105,7 +102,7 @@ class DHGroupNumber(long, DHGroup):
         return self
 
     def __neg__(self):
-        return DHGroupNumber(long(self).__neg__())
+        return DHGroupNumber(int(self).__neg__())
 
     # the modulo operation can be defined but it's not very useful, as it either returns 0 or it doesn't exist (ZeroDivisionError).
     # it's more practical to inherit modulo from the integer numbers, despite it being inconsistent with the division and divmod results
@@ -182,7 +179,7 @@ class SMPExponent(DHGroupNumber):
         return super(SMPExponent, cls).__new__(cls, value)
 
 
-class SMPHash(long):
+class SMPHash(int):
     def __new__(cls, value):
         if not 1 <= value.bit_length() <= 256:
             raise ValueError('invalid SMP hash')
@@ -212,8 +209,8 @@ class AESCounterCipher(object):
 # User Keys
 #
 
-class KeyType(object):
-    __metaclass__ = MarkerType
+class KeyType(object, metaclass=MarkerType):
+    pass
 
 
 class DSAKey(KeyType):
@@ -281,9 +278,7 @@ class PublicKeyType(ABCMeta):
             raise TypeError('unsupported key type: {0!r}'.format(key))
 
 
-class PrivateKey(object):
-    __metaclass__ = PrivateKeyType
-
+class PrivateKey(object, metaclass=PrivateKeyType):
     __backend__ = default_backend()
 
     __type__ = None
@@ -325,13 +320,11 @@ class PrivateKey(object):
 
     def save(self, path):
         content = self._key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())
-        with openfile(path, 'wb', permissions=0600) as key_file:
+        with openfile(path, 'wb', permissions=0o600) as key_file:
             key_file.write(content)
 
 
-class PublicKey(object):
-    __metaclass__ = PublicKeyType
-
+class PublicKey(object, metaclass=PublicKeyType):
     __backend__ = default_backend()
 
     __type__ = None
@@ -410,7 +403,7 @@ class DSAPublicKey(PublicKey):
         if not isinstance(hash_context, hashes.HashContext):
             raise TypeError("hash_context must be an instance of hashes.HashContext.")
         size = self.public_numbers.parameter_numbers.q.bit_length() // 8
-        r, s = (bytes_to_long(value) for value in read_content(signature, '{0}s{0}s'.format(size)))
+        r, s = (bytes_to_long(value) for value in read_content(signature, '{0}s{0}s'.format(size).encode()))
         # r, s = (bytes_to_long(value) for value in read_content(signature, '20s20s'))
         hash_context.update(data)
         digest = hash_context.finalize()
@@ -477,4 +470,3 @@ class DSASignatureHashContext(hashes.HashContext):
         if self.algorithm.digest_size * 8 > q.bit_length():
             digest = long_to_bytes(bytes_to_long(digest) % q, (q.bit_length() + 7) // 8)
         return digest
-
