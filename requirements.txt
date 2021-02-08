@@ -1,5 +1,4 @@
 enum34
 gmpy2
 zope.interface
-#python_application>=2.0.0
 cryptography
