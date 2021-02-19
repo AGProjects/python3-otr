@@ -530,20 +530,20 @@ class SMPMessage1Q(SMPMessage1):
     __type__ = 7
     __size__ = 6
 
-    def __init__(self, g2a, c2, d2, g3a, c3, d3, question=''):
+    def __init__(self, g2a, c2, d2, g3a, c3, d3, question=b''):
         super(SMPMessage1Q, self).__init__(g2a, c2, d2, g3a, c3, d3)
         self.question = question
 
     def pack_data(self):
-        return self.question + '\x00' + super(SMPMessage1Q, self).pack_data()
+        return self.question + b'\x00' + super(SMPMessage1Q, self).pack_data()
 
     @classmethod
     def unpack_data(cls, data):
-        question, separator, data = data.partition('\x00')
+        question, separator, data = data.partition(b'\x00')
         return super(SMPMessage1Q, cls).unpack_data(data) + (question,)
 
     @classmethod
-    def new(cls, protocol, question=''):
+    def new(cls, protocol, question=b''):
         instance = super(SMPMessage1Q, cls).new(protocol)
         instance.question = question
         return instance
