@@ -1089,14 +1089,14 @@ class OTRProtocol(object, metaclass=OTRProtocolType):
             notification_center.post_notification('OTRProtocolSMPVerificationDidNotStart', sender=self, data=NotificationData(reason='in progress'))
         else:
             self.smp.question = question
-            self.smp.secret = bytes_to_long(sha256(b'\1' + self.local_private_key.public_key.fingerprint + self.remote_public_key.fingerprint + self.session_id + secret.encode()).digest())
+            self.smp.secret = bytes_to_long(sha256(b'\1' + self.local_private_key.public_key.fingerprint + self.remote_public_key.fingerprint + self.session_id + secret).digest())
             self.send_tlv(SMPMessage1.new(self) if question is None else SMPMessage1Q.new(self, question))
             self.smp.state = SMPState.ExpectMessage2
             notification_center.post_notification('OTRProtocolSMPVerificationDidStart', sender=self, data=NotificationData(originator='local', question=question))
 
     def smp_answer(self, secret):
         if self.smp.state is SMPState.AwaitingUserSecret:
-            self.smp.secret = bytes_to_long(sha256(b'\1' + self.remote_public_key.fingerprint + self.local_private_key.public_key.fingerprint + self.session_id + secret.encode()).digest())
+            self.smp.secret = bytes_to_long(sha256(b'\1' + self.remote_public_key.fingerprint + self.local_private_key.public_key.fingerprint + self.session_id + secret).digest())
             self.smp.pa = self.smp.g3 ** self.smp.r                             # pa = g3^r
             self.smp.qa = self.smp.r.public_key * self.smp.g2**self.smp.secret  # qa = g1^r * g2^secret
             self.send_tlv(SMPMessage2.new(self))
