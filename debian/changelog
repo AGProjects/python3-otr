@@ -1,3 +1,11 @@
+python3-otr (2.0.1) unstable; urgency=medium
+
+  * Expect bytes for smp secret
+  * Fixed asking verification question
+  * Fixed setup.py
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Thu, 25 Feb 2021 12:10:58 +0100
+
 python3-otr (2.0.0) unstable; urgency=medium
 
   * Migrate to Python 3
