@@ -2,31 +2,10 @@
 
 import os
 from distutils.core import Distribution
+from otr import __info__ as package_info
 from setuptools import setup
 
 Distribution.install_requires = None  # make distutils ignore this option that is used by setuptools when invoked from pip install
-
-
-class PackageInfo(object):
-    def __init__(self, info_file):
-        with open(info_file) as f:
-            exec(f.read(), self.__dict__)
-        self.__dict__.pop('__builtins__', None)
-
-    def __getattribute__(self, name):  # this is here to silence the IDE about missing attributes
-        return super(PackageInfo, self).__getattribute__(name)
-
-
-package_info = PackageInfo(os.path.join('otr', '__info__.py'))
-
-
-def requirements():
-    install_requires = []
-    with open('requirements.txt') as f:
-        for line in f:
-            install_requires.append(line.strip())
-    return install_requires
-
 
 setup(
     name=package_info.__project__,
@@ -52,5 +31,6 @@ setup(
 
     packages=['otr'],
     provides=['otr'],
-    install_requires=requirements()
+    install_requires=['gmpy2', 'zope.interface', 'python_application', 'cryptography']
 )
+
