@@ -31,6 +31,6 @@ setup(
 
     packages=['otr'],
     provides=['otr'],
-    install_requires=['gmpy2', 'zope.interface', 'application', 'cryptography']
+    install_requires=['gmpy2', 'zope.interface', 'python3-application', 'cryptography']
 )
 
