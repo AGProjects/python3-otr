@@ -11,4 +11,4 @@ __author__ = "AG Projects"
 __email__ = "support@ag-projects.com"
 
 __license__ = "LGPL"
-__copyright__ = "Copyright 2020 {}".format(__author__)
+__copyright__ = "Copyright 2022 {}".format(__author__)
