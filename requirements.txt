@@ -1,4 +1,5 @@
 enum34
 gmpy2
 zope.interface
+python3-application @ git+https://github.com/AGProjects/python3-application
 cryptography
