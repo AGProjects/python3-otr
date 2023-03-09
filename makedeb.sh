@@ -8,4 +8,5 @@ cd dist
 
 tar zxvf *.tar.gz
 cd python3-otr-?.?.?
-debuild
+
+debuild --no-sign
