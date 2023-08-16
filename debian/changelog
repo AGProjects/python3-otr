@@ -10,7 +10,7 @@ python3-otr (2.0.0) unstable; urgency=medium
 
   * Migrate to Python 3
 
- -- Adrian Georgescu <ag@ag-projects.com>  Thu Feb 25 08:01:58 -03 2021
+ -- Adrian Georgescu <ag@ag-projects.com>  Thu, 25 Feb 2021 08:01:58 -0300
 
 python-otr (1.2.2) unstable; urgency=medium
 

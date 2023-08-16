@@ -2,7 +2,7 @@ Source: python3-otr
 Section: python
 Priority: optional
 Maintainer: Adrian Georgescu <ag@ag-projects.com>
-Build-Depends: debhelper (>= 11), dh-python, python3
+Build-Depends: debhelper (>= 11), dh-python, python3, python3-gmpy2
 Standards-Version: 4.5.0
 Homepage: https://ag-projects.com
 
