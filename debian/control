@@ -3,6 +3,7 @@ Section: python
 Priority: optional
 Maintainer: Adrian Georgescu <ag@ag-projects.com>
 Build-Depends: debhelper (>= 11), dh-python, python3, python3-gmpy2
+Uploaders: Tijmen de Mes <tijmen@ag-projects.com>
 Standards-Version: 4.5.0
 Homepage: https://ag-projects.com
 
