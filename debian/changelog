@@ -1,3 +1,11 @@
+python3-otr (2.0.2) unstable; urgency=medium
+
+  * Updated copyright dates
+  * Fixed Debian packaging
+  * Fixed the tests
+
+ -- Tijmen de Mes <tijmen@ag-projects.com>  Wed, 06 Dec 2023 11:03:05 +0100
+
 python3-otr (2.0.1) unstable; urgency=medium
 
   * Expect bytes for smp secret
