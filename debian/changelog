@@ -1,3 +1,10 @@
+python3-otr (2.1) unstable; urgency=medium
+
+  * Adjusted code for API changes in python-cryptography > 39
+  * Updated copyright dates
+
+ -- Tijmen de Mes <tijmen@ag-projects.com>  Fri, 20 Dec 2024 14:29:47 +0100
+
 python3-otr (2.0.2) unstable; urgency=medium
 
   * Updated copyright dates
