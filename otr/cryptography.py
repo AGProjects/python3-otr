@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dsa
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed, decode_dss_signature, encode_dss_signature
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.hmac import HMAC
 from gmpy2 import invert, legendre, mul, powmod
 from hashlib import sha1
 from random import getrandbits
@@ -437,7 +438,7 @@ class DSASignatureHashContext(hashes.HashContext):
         self._dsa_key = dsa_key
         self._backend = dsa_key.__backend__
         if ctx is None:
-            self._ctx = self._backend.create_hmac_ctx(mac_key, self.algorithm)
+            self._ctx = HMAC(mac_key, hashes.SHA256(), backend=self._backend)
         else:
             self._ctx = ctx
 
