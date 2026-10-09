@@ -1,11 +1,19 @@
 #!/usr/bin/python3
 
 import os
-from distutils.core import Distribution
-from otr import __info__ as package_info
 from setuptools import setup
 
-Distribution.install_requires = None  # make distutils ignore this option that is used by setuptools when invoked from pip install
+
+class PackageInfo(object):
+    # read otr/__info__.py without importing the otr package: its __init__
+    # imports gmpy2 and cryptography, which need not be installed to build
+    def __init__(self, info_file):
+        with open(info_file) as f:
+            exec(f.read(), self.__dict__)
+        self.__dict__.pop('__builtins__', None)
+
+
+package_info = PackageInfo(os.path.join('otr', '__info__.py'))
 
 setup(
     name=package_info.__project__,
@@ -31,6 +39,6 @@ setup(
 
     packages=['otr'],
     provides=['otr'],
-    install_requires=['gmpy2', 'zope.interface', 'python3-application', 'cryptography']
+    install_requires=['gmpy2', 'zope.interface', 'application', 'cryptography']
 )
 
